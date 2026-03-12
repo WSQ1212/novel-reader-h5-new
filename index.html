@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小说阅读器 - 预览版</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      border-radius: 8px;
+      padding: 10px 20px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s;
+      background: white;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .login-btn, .manage-btn, .settings-btn, .logout-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .logout-btn {
+      background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    }
+
+    .novel-grid {
+      margin-top: 20px;
+    }
+
+    .novel-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 24px;
+    }
+
+    .novel-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .novel-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .novel-cover {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .novel-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .novel-info {
+      padding: 16px;
+    }
+
+    .novel-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .novel-author {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .novel-chapter-count {
+      font-size: 12px;
+      color: #999;
+      background: #f0f0f0;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 80px 20px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      display: block;
+      margin-bottom: 20px;
+    }
+
+    .empty-text {
+      color: #666;
+      font-size: 16px;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      margin-bottom: 20px;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .detail {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .novel-header {
+      display: flex;
+      gap: 30px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      padding: 30px;
+      border-radius: 16px;
+      margin-bottom: 30px;
+    }
+
+    .novel-cover-large {
+      width: 220px;
+      height: 320px;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .novel-info-large {
+      flex: 1;
+    }
+
+    .novel-title-large {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .novel-author-large {
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .novel-introduction {
+      font-size: 15px;
+      color: #666;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .novel-update {
+      font-size: 13px;
+      color: #999;
+    }
+
+    .chapter-list {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .chapter-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #333;
+    }
+
+    .chapters {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .chapter-item {
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .chapter-item:hover {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+
+    .chapter-num {
+      font-size: 12px;
+      color: #667eea;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .chapter-name {
+      font-size: 15px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .edit-novel-btn-container {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .edit-novel-btn {
+      background: linear-gradient(135deg, #faad14 0%, #f6c23e 100%);
+      color: white;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .edit-chapter-btn {
+      background: linear-gradient(135deg, #faad14 0%, #f6c23e 100%);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .reader {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .reader-header {
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .chapter-title-large {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .novel-title-small {
+      font-size: 16px;
+      color: #999;
+    }
+
+    .reader-content {
+      max-width: 800px;
+      margin: 0 auto 40px;
+    }
+
+    .paragraph {
+      font-size: 18px;
+      line-height: 2.2;
+      color: #333;
+      margin-bottom: 24px;
+      text-indent: 2em;
+    }
+
+    .reader-nav {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .nav-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 36px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .nav-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 16px 32px;
+      border-radius: 12px;
+      z-index: 9999;
+      font-size: 16px;
+      max-width: 80%;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .upload {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .type-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: 14px;
+      background: #f0f0f0;
+      color: #666;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .type-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #333;
+      font-size: 15px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 16px;
+      margin-top: 40px;
+    }
+
+    .preview-btn {
+      flex: 1;
+      background: #f0f0f0;
+      color: #333;
+      padding: 14px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .submit-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .cover-upload {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cover-preview {
+      width: 200px;
+      height: 280px;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .upload-cover-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      width: fit-content;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 30px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+
+    .section h3 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #333;
+      font-weight: 700;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border-radius: 12px;
+    }
+
+    .user-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    .user-id {
+      font-size: 14px;
+      color: #999;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-item {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .stat-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 40px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+      }
+
+      .title {
+        font-size: 24px;
+      }
+
+      .novel-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .novel-cover-large {
+        width: 100%;
+        max-width: 280px;
+        height: auto;
+      }
+
+      .chapters {
+        grid-template-columns: 1fr;
+      }
+
+      .reader {
+        padding: 24px;
+      }
+
+      .reader-content {
+        padding: 0 10px;
+      }
+
+      .paragraph {
+        font-size: 16px;
+      }
+
+      .upload {
+        padding: 24px;
+      }
+
+      .type-selector {
+        flex-direction: column;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="index-page" class="container">
+      <div class="header">
+        <h1 class="title">📚 小说书架</h1>
+        <div class="header-buttons">
+          <button class="login-btn" onclick="login()">登录</button>
+          <button class="manage-btn hidden" onclick="showPage('upload-page')">上传</button>
+          <button class="settings-btn hidden" onclick="showPage('settings-page')">设置</button>
+          <button class="logout-btn hidden" onclick="logout()">退出登录</button>
+        </div>
+      </div>
+      
+      <div class="novel-grid">
+        <div id="novel-list" class="novel-list">
+        </div>
+        <div id="empty-state" class="empty">
+          <span class="empty-icon">📚</span>
+          <p class="empty-text">还没有小说，登录后点击上传按钮添加</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="detail-page" class="container hidden">
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+      
+      <div class="detail">
+        <div class="novel-header">
+          <img class="novel-cover-large" id="detail-cover" alt="封面">
+          <div class="novel-info-large">
+            <h1 class="novel-title-large" id="detail-title"></h1>
+            <p class="novel-author-large" id="detail-author"></p>
+            <p class="novel-introduction" id="detail-intro"></p>
+            <p class="novel-update" id="detail-update"></p>
+          </div>
+        </div>
+        
+        <div class="edit-novel-btn-container hidden" id="edit-novel-btn-container">
+          <button class="edit-novel-btn" onclick="editNovel()">✏️ 编辑小说</button>
+        </div>
+        
+        <div class="chapter-list">
+          <h2 class="chapter-title">章节列表</h2>
+          <div id="chapter-list-container" class="chapters"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="reader-page" class="container hidden">
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+      
+      <div class="reader">
+        <div class="reader-header">
+          <h1 class="chapter-title-large" id="reader-title"></h1>
+          <p class="novel-title-small" id="reader-novel"></p>
+        </div>
+        
+        <div class="reader-content" id="reader-content"></div>
+        
+        <div class="reader-nav">
+          <button class="nav-btn" onclick="prevChapter()">上一章</button>
+          <button class="nav-btn" onclick="nextChapter()">下一章</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="upload-page" class="container hidden">
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+      
+      <div class="upload">
+        <div class="type-selector">
+          <button class="type-btn active" onclick="selectType('novel')">创建小说</button>
+          <button class="type-btn" onclick="selectType('chapter')">添加章节</button>
+        </div>
+        
+        <div id="novel-form">
+          <h2 id="novel-form-title">创建新小说</h2>
+          <div class="form-group">
+            <label>小说名称 *</label>
+            <input type="text" id="novel-title-input" placeholder="请输入小说名称">
+          </div>
+          <div class="form-group">
+            <label>作者 *</label>
+            <input type="text" id="novel-author-input" placeholder="请输入作者名称">
+          </div>
+          <div class="form-group">
+            <label>简介</label>
+            <textarea id="novel-intro-input" placeholder="请输入小说简介" rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label>封面</label>
+            <div class="cover-upload">
+              <img id="cover-preview" class="cover-preview hidden" alt="封面预览">
+              <button class="upload-cover-btn" onclick="uploadCover()">选择封面</button>
+              <input type="file" id="cover-input" accept="image/*" style="display: none" onchange="handleCoverChange(event)">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="preview-btn" onclick="previewNovel()">预览</button>
+            <button class="submit-btn" id="novel-submit-btn" onclick="handleNovelSubmit()">创建</button>
+          </div>
+        </div>
+        
+        <div id="chapter-form" class="hidden">
+          <h2 id="chapter-form-title">添加章节</h2>
+          <div class="form-group">
+            <label>选择小说 *</label>
+            <select id="novel-select">
+              <option value="">请选择小说</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>章节标题 *</label>
+            <input type="text" id="chapter-title-input" placeholder="请输入章节标题">
+          </div>
+          <div class="form-group">
+            <label>章节序号 *</label>
+            <input type="number" id="chapter-num-input" placeholder="请输入章节序号">
+          </div>
+          <div class="form-group">
+            <label>章节内容 *</label>
+            <textarea id="chapter-content-input" placeholder="请输入章节内容" rows="15"></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="preview-btn" onclick="previewChapter()">预览</button>
+            <button class="submit-btn" id="chapter-submit-btn" onclick="handleChapterSubmit()">发布</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-page" class="container hidden">
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+      
+      <div class="upload">
+        <h2>设置</h2>
+        
+        <div id="developer-section" class="section hidden" style="background: linear-gradient(135deg, rgba(255, 77, 79, 0.1) 0%, rgba(255, 120, 117, 0.1) 100%);">
+          <h3>🔐 开发者说明</h3>
+          <p style="color: #666; line-height: 1.8; margin-bottom: 8px;">开发者密码：<strong style="color: #ff4d4f;">admin123</strong></p>
+          <p style="color: #666; line-height: 1.8; margin-bottom: 8px;">只有输入正确密码才能上传小说和章节</p>
+          <p style="color: #666; line-height: 1.8;">普通用户只能浏览和阅读</p>
+        </div>
+        
+        <div class="section">
+          <h3>用户信息</h3>
+          <div id="user-info" class="user-info"></div>
+        </div>
+        
+        <div id="data-management-section" class="section hidden">
+          <h3>数据管理</h3>
+          <button class="submit-btn" onclick="exportData()">导出数据</button>
+          <button class="submit-btn" onclick="logout()" style="background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%); margin-top: 12px;">退出登录</button>
+        </div>
+        
+        <div class="section">
+          <h3>统计信息</h3>
+          <div class="stats">
+            <div class="stat-item">
+              <span class="stat-label">小说数量</span>
+              <span class="stat-value" id="stat-novel-count">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">章节总数</span>
+              <span class="stat-value" id="stat-chapter-count">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPage = 'index-page';
+    let currentNovel = null;
+    let currentChapterIndex = 0;
+    let isDeveloper = false;
+    let isLoggedIn = false;
+    let novelList = [];
+    let chapterData = {};
+    let currentCoverUrl = '';
+    let editingChapterId = null;
+    const DEVELOPER_PASSWORD = 'admin123';
+
+    function showPage(pageId) {
+      if (pageId === 'upload-page' && !isDeveloper) {
+        showToast('只有开发者才能访问此页面');
+        return;
+      }
+      
+      document.querySelectorAll('[id$="-page"]').forEach(div => {
+        div.classList.add('hidden');
+      });
+      document.getElementById(pageId).classList.remove('hidden');
+      currentPage = pageId;
+      
+      if (pageId === 'settings-page') {
+        updateStats();
+        updateUserInfo();
+      }
+      
+      updateSettingsVisibility();
+    }
+
+    function goBack() {
+      if (currentPage === 'detail-page' || currentPage === 'upload-page' || currentPage === 'settings-page') {
+        showPage('index-page');
+        loadNovelList();
+      } else if (currentPage === 'reader-page') {
+        showPage('detail-page');
+      }
+      
+      if (currentPage === 'upload-page') {
+        document.getElementById('novel-form-title').textContent = '创建新小说';
+        document.getElementById('novel-submit-btn').textContent = '创建';
+        document.getElementById('chapter-form-title').textContent = '添加章节';
+        document.getElementById('chapter-submit-btn').textContent = '发布';
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 2000);
+    }
+
+    function login() {
+      const password = prompt('请输入密码：\n\n普通用户：直接点击确定\n开发者：输入密码');
+      
+      if (password === null) {
+        return;
+      }
+      
+      isLoggedIn = true;
+      
+      if (password === DEVELOPER_PASSWORD) {
+        isDeveloper = true;
+        document.querySelector('.login-btn').classList.add('hidden');
+        document.querySelector('.manage-btn').classList.remove('hidden');
+        document.querySelector('.settings-btn').classList.remove('hidden');
+        document.querySelector('.logout-btn').classList.remove('hidden');
+        showToast('开发者登录成功');
+        updateSettingsVisibility();
+      } else {
+        isDeveloper = false;
+        document.querySelector('.login-btn').classList.add('hidden');
+        document.querySelector('.manage-btn').classList.add('hidden');
+        document.querySelector('.settings-btn').classList.remove('hidden');
+        document.querySelector('.logout-btn').classList.remove('hidden');
+        showToast('普通用户登录成功');
+        updateSettingsVisibility();
+      }
+    }
+
+    function logout() {
+      isLoggedIn = false;
+      isDeveloper = false;
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('isDeveloper');
+      document.querySelector('.login-btn').classList.remove('hidden');
+      document.querySelector('.manage-btn').classList.add('hidden');
+      document.querySelector('.settings-btn').classList.add('hidden');
+      document.querySelector('.logout-btn').classList.add('hidden');
+      showToast('已退出登录');
+      showPage('index-page');
+    }
+
+    function loadNovelList() {
+      const list = JSON.parse(localStorage.getItem('novelList') || '[]');
+      const data = JSON.parse(localStorage.getItem('chapterData') || '{}');
+      novelList = list;
+      chapterData = data;
+
+      const container = document.getElementById('novel-list');
+      const empty = document.getElementById('empty-state');
+
+      if (list.length === 0) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      container.innerHTML = list.map(novel => {
+        const stringNovelId = String(novel.id);
+        const chapters = data[stringNovelId] || [];
+        const coverHtml = novel.cover 
+          ? `<img src="${novel.cover}" class="novel-cover-img" alt="${novel.title}">`
+          : '';
+        return `
+          <div class="novel-card" onclick="showDetail('${novel.id}')">
+            <div class="novel-cover">
+              ${coverHtml}
+            </div>
+            <div class="novel-info">
+              <h3 class="novel-title">${novel.title}</h3>
+              <p class="novel-author">${novel.author}</p>
+              <p class="novel-chapter-count">${chapters.length}章</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showDetail(novelId) {
+      const novel = novelList.find(n => String(n.id) === String(novelId));
+      if (!novel) return;
+
+      currentNovel = novel;
+      const stringNovelId = String(novelId);
+      
+      chapterData = JSON.parse(localStorage.getItem('chapterData') || '{}');
+      const chapters = chapterData[stringNovelId] || [];
+      
+      console.log('showDetail - 重新读取 chapterData');
+      console.log('showDetail - novelId:', novelId, '类型:', typeof novelId);
+      console.log('showDetail - stringNovelId:', stringNovelId);
+      console.log('showDetail - chapterData 所有key:', Object.keys(chapterData));
+      console.log('showDetail - chapters:', chapters);
+      console.log('showDetail - 章节数量:', chapters.length);
+
+      document.getElementById('detail-title').textContent = novel.title;
+      document.getElementById('detail-author').textContent = '作者：' + novel.author;
+      document.getElementById('detail-intro').textContent = novel.introduction || '暂无简介';
+      document.getElementById('detail-update').textContent = '更新时间：' + (novel.updateDate || '未知');
+
+      const coverImg = document.getElementById('detail-cover');
+      if (novel.cover) {
+        coverImg.src = novel.cover;
+        coverImg.style.background = 'none';
+      } else {
+        coverImg.src = '';
+        coverImg.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      }
+
+      const editBtnContainer = document.getElementById('edit-novel-btn-container');
+      if (isDeveloper) {
+        editBtnContainer.classList.remove('hidden');
+      } else {
+        editBtnContainer.classList.add('hidden');
+      }
+
+      const container = document.getElementById('chapter-list-container');
+      if (chapters.length === 0) {
+        container.innerHTML = '<p>暂无章节</p>';
+      } else {
+        container.innerHTML = chapters.map((chapter, index) => `
+          <div class="chapter-item" onclick="showChapter('${chapter.id}', ${index})">
+            <span class="chapter-num">第${chapter.chapter}章</span>
+            <span class="chapter-name">${chapter.title}</span>
+            ${isDeveloper ? `<button class="edit-chapter-btn" onclick="event.stopPropagation(); editChapter('${chapter.id}', ${index})">✏️ 编辑</button>` : ''}
+          </div>
+        `).join('');
+      }
+
+      showPage('detail-page');
+    }
+
+    function showChapter(chapterId, index) {
+      const stringNovelId = String(currentNovel.id);
+      const chapters = chapterData[stringNovelId] || [];
+      const chapter = chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+
+      currentChapterIndex = index;
+
+      document.getElementById('reader-title').textContent = chapter.title;
+      document.getElementById('reader-novel').textContent = currentNovel.title;
+
+      const paragraphs = chapter.content.split('\n').filter(p => p.trim());
+      document.getElementById('reader-content').innerHTML = paragraphs.map(p => `
+        <p class="paragraph">${p}</p>
+      `).join('');
+
+      showPage('reader-page');
+    }
+
+    function prevChapter() {
+      const stringNovelId = String(currentNovel.id);
+      const chapters = chapterData[stringNovelId] || [];
+      if (currentChapterIndex > 0) {
+        const prevChapter = chapters[currentChapterIndex - 1];
+        showChapter(prevChapter.id, currentChapterIndex - 1);
+      } else {
+        showToast('已经是第一章了');
+      }
+    }
+
+    function nextChapter() {
+      const stringNovelId = String(currentNovel.id);
+      const chapters = chapterData[stringNovelId] || [];
+      if (currentChapterIndex < chapters.length - 1) {
+        const nextChapter = chapters[currentChapterIndex + 1];
+        showChapter(nextChapter.id, currentChapterIndex + 1);
+      } else {
+        showToast('已经是最后一章了');
+      }
+    }
+
+    function selectType(type) {
+      document.querySelectorAll('.type-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      if (type === 'novel') {
+        document.getElementById('novel-form').classList.remove('hidden');
+        document.getElementById('chapter-form').classList.add('hidden');
+      } else {
+        document.getElementById('novel-form').classList.add('hidden');
+        document.getElementById('chapter-form').classList.remove('hidden');
+        loadNovelSelect();
+      }
+    }
+
+    function loadNovelSelect() {
+      const select = document.getElementById('novel-select');
+      select.innerHTML = '<option value="">请选择小说</option>' + 
+        novelList.map(novel => `<option value="${novel.id}">${novel.title}</option>`).join('');
+    }
+
+    function uploadCover() {
+      document.getElementById('cover-input').click();
+    }
+
+    function handleCoverChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentCoverUrl = e.target.result;
+          const preview = document.getElementById('cover-preview');
+          preview.src = currentCoverUrl;
+          preview.classList.remove('hidden');
+          showToast('封面选择成功');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function previewNovel() {
+      const title = document.getElementById('novel-title-input').value;
+      const author = document.getElementById('novel-author-input').value;
+      const intro = document.getElementById('novel-intro-input').value;
+      alert(`小说名称：${title}\n作者：${author}\n简介：${intro || '暂无简介'}`);
+    }
+
+    function handleNovelSubmit() {
+      if (currentNovel) {
+        updateNovel();
+      } else {
+        submitNovel();
+      }
+    }
+
+    function submitNovel() {
+      const title = document.getElementById('novel-title-input').value.trim();
+      const author = document.getElementById('novel-author-input').value.trim();
+      const intro = document.getElementById('novel-intro-input').value.trim();
+
+      if (!title) {
+        showToast('请输入小说名称');
+        return;
+      }
+      if (!author) {
+        showToast('请输入作者名称');
+        return;
+      }
+
+      const newNovel = {
+        id: Date.now().toString(),
+        title: title,
+        author: author,
+        introduction: intro,
+        cover: currentCoverUrl,
+        updateDate: new Date().toISOString().split('T')[0],
+        timestamp: Date.now()
+      };
+
+      novelList.push(newNovel);
+      localStorage.setItem('novelList', JSON.stringify(novelList));
+
+      showToast('创建成功');
+      document.getElementById('novel-title-input').value = '';
+      document.getElementById('novel-author-input').value = '';
+      document.getElementById('novel-intro-input').value = '';
+      document.getElementById('cover-preview').classList.add('hidden');
+      currentCoverUrl = '';
+    }
+
+    function editNovel() {
+      if (!currentNovel) return;
+      
+      document.getElementById('novel-title-input').value = currentNovel.title;
+      document.getElementById('novel-author-input').value = currentNovel.author;
+      document.getElementById('novel-intro-input').value = currentNovel.introduction || '';
+      
+      if (currentNovel.cover) {
+        currentCoverUrl = currentNovel.cover;
+        const preview = document.getElementById('cover-preview');
+        preview.src = currentCoverUrl;
+        preview.classList.remove('hidden');
+      }
+      
+      document.getElementById('novel-form-title').textContent = '编辑小说';
+      document.getElementById('novel-submit-btn').textContent = '更新';
+      
+      selectType('novel');
+      showPage('upload-page');
+      showToast('已加载小说信息');
+    }
+
+    function updateNovel() {
+      const title = document.getElementById('novel-title-input').value.trim();
+      const author = document.getElementById('novel-author-input').value.trim();
+      const intro = document.getElementById('novel-intro-input').value.trim();
+
+      if (!title) {
+        showToast('请输入小说名称');
+        return;
+      }
+      if (!author) {
+        showToast('请输入作者名称');
+        return;
+      }
+
+      if (!currentNovel) return;
+
+      currentNovel.title = title;
+      currentNovel.author = author;
+      currentNovel.introduction = intro;
+      currentNovel.cover = currentCoverUrl;
+      currentNovel.updateDate = new Date().toISOString().split('T')[0];
+
+      const index = novelList.findIndex(n => n.id === currentNovel.id);
+      if (index !== -1) {
+        novelList[index] = currentNovel;
+        localStorage.setItem('novelList', JSON.stringify(novelList));
+      }
+
+      showToast('更新成功');
+      document.getElementById('novel-title-input').value = '';
+      document.getElementById('novel-author-input').value = '';
+      document.getElementById('novel-intro-input').value = '';
+      document.getElementById('cover-preview').classList.add('hidden');
+      currentCoverUrl = '';
+      currentNovel = null;
+      
+      goBack();
+    }
+
+    function previewChapter() {
+      const novelId = document.getElementById('novel-select').value;
+      const title = document.getElementById('chapter-title-input').value;
+      const chapter = document.getElementById('chapter-num-input').value;
+      const content = document.getElementById('chapter-content-input').value;
+
+      if (!novelId) {
+        showToast('请选择小说');
+        return;
+      }
+      alert(`标题：${title}\n章节：第${chapter}章\n内容：${content.substring(0, 100)}...`);
+    }
+
+    function handleChapterSubmit() {
+      const novelId = document.getElementById('novel-select').value;
+      const title = document.getElementById('chapter-title-input').value.trim();
+      const chapter = parseInt(document.getElementById('chapter-num-input').value);
+      const content = document.getElementById('chapter-content-input').value.trim();
+
+      console.log('发布章节调试信息：');
+      console.log('novelId:', novelId, '类型:', typeof novelId);
+      console.log('title:', title);
+      console.log('chapter:', chapter);
+      console.log('content length:', content.length);
+
+      if (!novelId) {
+        showToast('请选择小说');
+        return;
+      }
+      if (!title) {
+        showToast('请输入章节标题');
+        return;
+      }
+      if (!chapter) {
+        showToast('请输入章节序号');
+        return;
+      }
+      if (!content) {
+        showToast('请输入章节内容');
+        return;
+      }
+
+      const stringNovelId = String(novelId);
+      const chapters = chapterData[stringNovelId] || [];
+      console.log('当前章节数量:', chapters.length);
+      console.log('chapterData 所有key:', Object.keys(chapterData));
+      console.log('chapterData[stringNovelId]:', chapters);
+      
+      if (editingChapterId) {
+        const existingChapter = chapters.find(c => c.id === editingChapterId);
+        if (existingChapter) {
+          existingChapter.title = title;
+          existingChapter.chapter = chapter;
+          existingChapter.content = content;
+          existingChapter.date = new Date().toISOString().split('T')[0];
+        }
+        chapterData[stringNovelId] = chapters;
+        localStorage.setItem('chapterData', JSON.stringify(chapterData));
+        console.log('更新章节后，chapterData:', chapterData);
+        showToast('更新成功');
+      } else {
+        const existingChapter = chapters.find(c => c.title === title && c.chapter === chapter);
+        if (existingChapter) {
+          existingChapter.title = title;
+          existingChapter.chapter = chapter;
+          existingChapter.content = content;
+          existingChapter.date = new Date().toISOString().split('T')[0];
+        } else {
+          const newChapter = {
+            id: Date.now().toString(),
+            novelId: stringNovelId,
+            title: title,
+            chapter: chapter,
+            content: content,
+            date: new Date().toISOString().split('T')[0],
+            timestamp: Date.now()
+          };
+          chapters.push(newChapter);
+          console.log('添加章节后，章节数量:', chapters.length);
+        }
+        chapterData[stringNovelId] = chapters;
+        localStorage.setItem('chapterData', JSON.stringify(chapterData));
+        console.log('保存后，chapterData 所有key:', Object.keys(chapterData));
+        console.log('保存后，chapterData[stringNovelId] 长度:', chapterData[stringNovelId].length);
+        showToast('发布成功');
+        
+        document.getElementById('chapter-title-input').value = '';
+        document.getElementById('chapter-num-input').value = '';
+        document.getElementById('chapter-content-input').value = '';
+        editingChapterId = null;
+        
+        goBack();
+      }
+
+      document.getElementById('chapter-title-input').value = '';
+      document.getElementById('chapter-num-input').value = '';
+      document.getElementById('chapter-content-input').value = '';
+      editingChapterId = null;
+    }
+
+    function editChapter(chapterId, index) {
+      const stringNovelId = String(currentNovel.id);
+      const chapters = chapterData[stringNovelId] || [];
+      const chapter = chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+
+      editingChapterId = chapterId;
+      
+      document.getElementById('chapter-title-input').value = chapter.title;
+      document.getElementById('chapter-num-input').value = chapter.chapter;
+      document.getElementById('chapter-content-input').value = chapter.content;
+      document.getElementById('novel-select').value = currentNovel.id;
+
+      document.getElementById('chapter-form-title').textContent = '编辑章节';
+      document.getElementById('chapter-submit-btn').textContent = '更新';
+
+      selectType('chapter');
+      showPage('upload-page');
+      showToast('已加载章节信息');
+    }
+
+    function updateChapter() {
+      const novelId = document.getElementById('novel-select').value;
+      const title = document.getElementById('chapter-title-input').value.trim();
+      const chapter = parseInt(document.getElementById('chapter-num-input').value);
+      const content = document.getElementById('chapter-content-input').value.trim();
+
+      if (!novelId) {
+        showToast('请选择小说');
+        return;
+      }
+      if (!title) {
+        showToast('请输入章节标题');
+        return;
+      }
+      if (!chapter) {
+        showToast('请输入章节序号');
+        return;
+      }
+      if (!content) {
+        showToast('请输入章节内容');
+        return;
+      }
+
+      if (!currentNovel) return;
+
+      const stringNovelId = String(currentNovel.id);
+      const chapters = chapterData[stringNovelId] || [];
+      const index = chapters.findIndex(c => c.novelId === stringNovelId);
+      
+      if (index !== -1) {
+        const existingChapter = chapters.find(c => c.title === title && c.chapter === chapter);
+        if (existingChapter) {
+          existingChapter.title = title;
+          existingChapter.chapter = chapter;
+          existingChapter.content = content;
+          existingChapter.date = new Date().toISOString().split('T')[0];
+        } else {
+          const newChapter = {
+            id: Date.now().toString(),
+            novelId: stringNovelId,
+            title: title,
+            chapter: chapter,
+            content: content,
+            date: new Date().toISOString().split('T')[0],
+            timestamp: Date.now()
+          };
+          chapters.push(newChapter);
+        }
+        
+        localStorage.setItem('chapterData', JSON.stringify(chapterData));
+      }
+
+      showToast('更新成功');
+      document.getElementById('chapter-title-input').value = '';
+      document.getElementById('chapter-num-input').value = '';
+      document.getElementById('chapter-content-input').value = '';
+      
+      goBack();
+    }
+
+    function exportData() {
+      const data = {
+        novelList: novelList,
+        chapterData: chapterData,
+        exportTime: new Date().toISOString()
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `novel-data-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showToast('导出成功');
+    }
+
+    function updateStats() {
+      let chapterCount = 0;
+      for (const key in chapterData) {
+        chapterCount += chapterData[key].length;
+      }
+
+      document.getElementById('stat-novel-count').textContent = novelList.length;
+      document.getElementById('stat-chapter-count').textContent = chapterCount;
+    }
+
+    function updateUserInfo() {
+      const userInfoDiv = document.getElementById('user-info');
+      if (isLoggedIn) {
+        if (isDeveloper) {
+          userInfoDiv.innerHTML = `
+            <div class="user-avatar"></div>
+            <div class="user-details">
+              <p class="user-name">开发者</p>
+              <p class="user-id">ID: admin</p>
+            </div>
+          `;
+        } else {
+          userInfoDiv.innerHTML = `
+            <div class="user-avatar" style="background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);"></div>
+            <div class="user-details">
+              <p class="user-name">普通用户</p>
+              <p class="user-id">ID: visitor</p>
+            </div>
+          `;
+        }
+      } else {
+        userInfoDiv.innerHTML = '<p>未登录</p>';
+      }
+    }
+
+    function updateSettingsVisibility() {
+      const developerSection = document.getElementById('developer-section');
+      const dataManagementSection = document.getElementById('data-management-section');
+      
+      if (isDeveloper) {
+        developerSection?.classList.remove('hidden');
+        dataManagementSection?.classList.remove('hidden');
+      } else {
+        developerSection?.classList.add('hidden');
+        dataManagementSection?.classList.add('hidden');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadNovelList();
+      updateStats();
+      updateUserInfo();
+      checkLoginStatus();
+    });
+
+    function checkLoginStatus() {
+      const storedIsLoggedIn = localStorage.getItem('isLoggedIn');
+      const storedIsDeveloper = localStorage.getItem('isDeveloper');
+      
+      if (storedIsLoggedIn === 'true') {
+        isLoggedIn = true;
+        isDeveloper = storedIsDeveloper === 'true';
+        
+        document.querySelector('.login-btn').classList.add('hidden');
+        
+        if (isDeveloper) {
+          document.querySelector('.manage-btn').classList.remove('hidden');
+          document.querySelector('.settings-btn').classList.remove('hidden');
+          document.querySelector('.logout-btn').classList.remove('hidden');
+        } else {
+          document.querySelector('.manage-btn').classList.add('hidden');
+          document.querySelector('.settings-btn').classList.add('hidden');
+          document.querySelector('.logout-btn').classList.remove('hidden');
+        }
+        
+        updateSettingsVisibility();
+      }
+    }
+  </script>
+</body>
+</html>
