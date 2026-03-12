@@ -846,6 +846,79 @@
     let editingChapterId = null;
     const DEVELOPER_PASSWORD = 'admin123';
 
+    const GITHUB_CONFIG = {
+      token: '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',
+      owner: 'WSQ1212',
+      repo: 'novel-reader-h5-new',
+      dataFile: 'novel-data.json'
+    };
+
+    async function loadFromGitHub() {
+      try {
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dataFile}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          console.log('GitHub 数据文件不存在，使用本地数据');
+          return null;
+        }
+        
+        const data = await response.json();
+        const decodedContent = atob(data.content);
+        return JSON.parse(decodedContent);
+      } catch (error) {
+        console.error('从 GitHub 读取数据失败:', error);
+        return null;
+      }
+    }
+
+    async function saveToGitHub(data) {
+      try {
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dataFile}`;
+        
+        let sha = null;
+        try {
+          const existingResponse = await fetch(url);
+          if (existingResponse.ok) {
+            const existingData = await existingResponse.json();
+            sha = existingData.sha;
+          }
+        } catch (e) {}
+        
+        const jsonString = JSON.stringify(data, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(jsonString)));
+        const body = {
+          message: `Update data at ${new Date().toISOString()}`,
+          content: encodedContent
+        };
+        
+        if (sha) {
+          body.sha = sha;
+        }
+        
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${GITHUB_CONFIG.token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('保存到 GitHub 失败:', errorData);
+          throw new Error('保存失败');
+        }
+        
+        console.log('成功保存到 GitHub');
+        return true;
+      } catch (error) {
+        console.error('保存到 GitHub 失败:', error);
+        return false;
+      }
+    }
+
     function showPage(pageId) {
       if (pageId === 'upload-page' && !isDeveloper) {
         showToast('只有开发者才能访问此页面');
@@ -866,10 +939,10 @@
       updateSettingsVisibility();
     }
 
-    function goBack() {
+    async function goBack() {
       if (currentPage === 'detail-page' || currentPage === 'upload-page' || currentPage === 'settings-page') {
         showPage('index-page');
-        loadNovelList();
+        await loadNovelList();
       } else if (currentPage === 'reader-page') {
         showPage('detail-page');
       }
@@ -933,25 +1006,39 @@
       showPage('index-page');
     }
 
-    function loadNovelList() {
-      const list = JSON.parse(localStorage.getItem('novelList') || '[]');
-      const data = JSON.parse(localStorage.getItem('chapterData') || '{}');
-      novelList = list;
-      chapterData = data;
+    async function loadNovelList() {
+      console.log('开始加载小说列表...');
+      
+      const githubData = await loadFromGitHub();
+      
+      if (githubData) {
+        console.log('从 GitHub 加载数据成功');
+        novelList = githubData.novels || [];
+        chapterData = githubData.chapters || {};
+        
+        localStorage.setItem('novelList', JSON.stringify(novelList));
+        localStorage.setItem('chapterData', JSON.stringify(chapterData));
+      } else {
+        console.log('使用本地数据');
+        const list = JSON.parse(localStorage.getItem('novelList') || '[]');
+        const data = JSON.parse(localStorage.getItem('chapterData') || '{}');
+        novelList = list;
+        chapterData = data;
+      }
 
       const container = document.getElementById('novel-list');
       const empty = document.getElementById('empty-state');
 
-      if (list.length === 0) {
+      if (novelList.length === 0) {
         container.innerHTML = '';
         empty.classList.remove('hidden');
         return;
       }
 
       empty.classList.add('hidden');
-      container.innerHTML = list.map(novel => {
+      container.innerHTML = novelList.map(novel => {
         const stringNovelId = String(novel.id);
-        const chapters = data[stringNovelId] || [];
+        const chapters = chapterData[stringNovelId] || [];
         const coverHtml = novel.cover 
           ? `<img src="${novel.cover}" class="novel-cover-img" alt="${novel.title}">`
           : '';
@@ -1121,7 +1208,7 @@
       }
     }
 
-    function submitNovel() {
+    async function submitNovel() {
       const title = document.getElementById('novel-title-input').value.trim();
       const author = document.getElementById('novel-author-input').value.trim();
       const intro = document.getElementById('novel-intro-input').value.trim();
@@ -1148,7 +1235,17 @@
       novelList.push(newNovel);
       localStorage.setItem('novelList', JSON.stringify(novelList));
 
-      showToast('创建成功');
+      const success = await saveToGitHub({
+        novels: novelList,
+        chapters: chapterData
+      });
+
+      if (success) {
+        showToast('创建成功并已同步到 GitHub');
+      } else {
+        showToast('创建成功，但同步到 GitHub 失败');
+      }
+
       document.getElementById('novel-title-input').value = '';
       document.getElementById('novel-author-input').value = '';
       document.getElementById('novel-intro-input').value = '';
@@ -1178,7 +1275,7 @@
       showToast('已加载小说信息');
     }
 
-    function updateNovel() {
+    async function updateNovel() {
       const title = document.getElementById('novel-title-input').value.trim();
       const author = document.getElementById('novel-author-input').value.trim();
       const intro = document.getElementById('novel-intro-input').value.trim();
@@ -1206,7 +1303,17 @@
         localStorage.setItem('novelList', JSON.stringify(novelList));
       }
 
-      showToast('更新成功');
+      const success = await saveToGitHub({
+        novels: novelList,
+        chapters: chapterData
+      });
+
+      if (success) {
+        showToast('更新成功并已同步到 GitHub');
+      } else {
+        showToast('更新成功，但同步到 GitHub 失败');
+      }
+
       document.getElementById('novel-title-input').value = '';
       document.getElementById('novel-author-input').value = '';
       document.getElementById('novel-intro-input').value = '';
@@ -1230,7 +1337,7 @@
       alert(`标题：${title}\n章节：第${chapter}章\n内容：${content.substring(0, 100)}...`);
     }
 
-    function handleChapterSubmit() {
+    async function handleChapterSubmit() {
       const novelId = document.getElementById('novel-select').value;
       const title = document.getElementById('chapter-title-input').value.trim();
       const chapter = parseInt(document.getElementById('chapter-num-input').value);
@@ -1276,7 +1383,17 @@
         chapterData[stringNovelId] = chapters;
         localStorage.setItem('chapterData', JSON.stringify(chapterData));
         console.log('更新章节后，chapterData:', chapterData);
-        showToast('更新成功');
+        
+        const success = await saveToGitHub({
+          novels: novelList,
+          chapters: chapterData
+        });
+        
+        if (success) {
+          showToast('更新成功并已同步到 GitHub');
+        } else {
+          showToast('更新成功，但同步到 GitHub 失败');
+        }
       } else {
         const existingChapter = chapters.find(c => c.title === title && c.chapter === chapter);
         if (existingChapter) {
@@ -1301,7 +1418,17 @@
         localStorage.setItem('chapterData', JSON.stringify(chapterData));
         console.log('保存后，chapterData 所有key:', Object.keys(chapterData));
         console.log('保存后，chapterData[stringNovelId] 长度:', chapterData[stringNovelId].length);
-        showToast('发布成功');
+        
+        const success = await saveToGitHub({
+          novels: novelList,
+          chapters: chapterData
+        });
+        
+        if (success) {
+          showToast('发布成功并已同步到 GitHub');
+        } else {
+          showToast('发布成功，但同步到 GitHub 失败');
+        }
         
         document.getElementById('chapter-title-input').value = '';
         document.getElementById('chapter-num-input').value = '';
@@ -1464,8 +1591,8 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadNovelList();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadNovelList();
       updateStats();
       updateUserInfo();
       checkLoginStatus();
