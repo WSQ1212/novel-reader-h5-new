@@ -847,7 +847,7 @@
     const DEVELOPER_PASSWORD = 'admin123';
 
     const GITHUB_CONFIG = {
-      token: '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',
+      token: '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',
       owner: 'WSQ1212',
       repo: 'novel-reader-h5-new',
       dataFile: 'novel-data.json'
@@ -908,12 +908,21 @@
         });
         
         if (!response.ok) {
-          const errorText = await response.text();
+          let errorText = '';
+          try {
+            errorText = await response.text();
+          } catch (e) {
+            errorText = '无法解析错误响应';
+          }
+          
           console.error('保存到 GitHub 失败 - 状态码:', response.status);
           console.error('保存到 GitHub 失败 - 响应内容:', errorText);
           console.error('保存到 GitHub 失败 - 请求 URL:', url);
           console.error('保存到 GitHub 失败 - 请求体:', JSON.stringify(body, null, 2));
-          throw new Error(`保存失败: ${response.status} ${errorText}`);
+          
+          const errorMsg = `保存失败 (${response.status}): ${errorText}`;
+          console.error(errorMsg);
+          throw new Error(errorMsg);
         }
         
         console.log('成功保存到 GitHub');
